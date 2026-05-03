@@ -15,11 +15,12 @@ export default async function handler(req, res) {
     const title = track.name;
     const artist = track.artist["#text"];
     const album = track.album["#text"];
-    const art = track.image?.find(i => i.size === "large")?.["#text"] || "";
+    const artUrl = track.image?.find(i => i.size === "large")?.["#text"] || "";
+    const art = (artUrl && !artUrl.includes("2a96cbd8b46e442fc41c2b86b821562f")) ? artUrl : "";
     const isNowPlaying = !!track["@attr"]?.nowplaying;
 
     let artBase64 = "";
-    if (art && art.trim() !== "") {
+    if (art) {
       try {
         const buf = await fetch(art).then(r => r.arrayBuffer());
         artBase64 = `data:image/jpeg;base64,${Buffer.from(buf).toString("base64")}`;
@@ -28,7 +29,14 @@ export default async function handler(req, res) {
       }
     }
 
+    const escape = (str) => str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
     const truncate = (str, n) => str.length > n ? str.slice(0, n) + "…" : str;
+    const t = (str, n) => escape(truncate(str, n));
 
     const svg = `
 <svg width="320" height="80" viewBox="0 0 320 80" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -39,9 +47,9 @@ export default async function handler(req, res) {
   </defs>
   <rect width="320" height="80" rx="10" fill="#111"/>
   ${artBase64 ? `<image href="${artBase64}" x="12" y="10" width="60" height="60" clip-path="url(#art)" preserveAspectRatio="xMidYMid slice"/>` : ""}
-  <text x="84" y="30" font-family="'Segoe UI', sans-serif" font-size="13" font-weight="600" fill="#ffffff">${truncate(title, 28)}</text>
-  <text x="84" y="48" font-family="'Segoe UI', sans-serif" font-size="10" fill="#888888">${truncate(artist, 32)}</text>
-  <text x="84" y="62" font-family="'Segoe UI', sans-serif" font-size="10" fill="#666666">${truncate(album, 32)}</text>
+  <text x="84" y="30" font-family="'Segoe UI', sans-serif" font-size="13" font-weight="600" fill="#ffffff">${t(title, 28)}</text>
+  <text x="84" y="48" font-family="'Segoe UI', sans-serif" font-size="10" fill="#888888">${t(artist, 32)}</text>
+  <text x="84" y="62" font-family="'Segoe UI', sans-serif" font-size="10" fill="#666666">${t(album, 32)}</text>
   ${isNowPlaying ? `<circle cx="303" cy="14" r="5" fill="#e53935"><animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite"/></circle>` : ""}
 </svg>`.trim();
 
