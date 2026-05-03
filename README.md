@@ -1,4 +1,4 @@
-### Simple and very tuff now playing/lastfm scrobble card to style your GitHub profile :D
+## Simple and very tuff now playing/lastfm scrobble card to style your GitHub profile :D
 
 ### Usage
 place ts in ur github profile readme and replace `USERNAME` with ur username ツ
