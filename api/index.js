@@ -1,9 +1,9 @@
 export default async function handler(req, res) {
   const USER = req.query.user;
-  const LASTFM_API_KEY = req.query.apikey;
+  const LASTFM_API_KEY = process.env.LASTFM_API_KEY;
 
-  if (!USER || !LASTFM_API_KEY) {
-    res.status(400).send("Missing ?user= or ?apikey=");
+  if (!USER) {
+    res.status(400).send("Missing ?user=");
     return;
   }
 
