@@ -7,25 +7,30 @@ export default async function handler(req, res) {
     return;
   }
 
-  const url = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${USER}&api_key=${LASTFM_API_KEY}&format=json&limit=1`;
-  const data = await fetch(url).then(r => r.json());
-  const track = data.recenttracks.track[0];
+  try {
+    const url = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${USER}&api_key=${LASTFM_API_KEY}&format=json&limit=1`;
+    const data = await fetch(url).then(r => r.json());
+    const track = data.recenttracks.track[0];
 
-  const title = track.name;
-  const artist = track.artist["#text"];
-  const album = track.album["#text"];
-  const art = track.image.find(i => i.size === "large")?.["#text"] || "";
-  const isNowPlaying = !!track["@attr"]?.nowplaying;
+    const title = track.name;
+    const artist = track.artist["#text"];
+    const album = track.album["#text"];
+    const art = track.image?.find(i => i.size === "large")?.["#text"] || "";
+    const isNowPlaying = !!track["@attr"]?.nowplaying;
 
-  let artBase64 = "";
-  if (art) {
-    const buf = await fetch(art).then(r => r.arrayBuffer());
-    artBase64 = `data:image/jpeg;base64,${Buffer.from(buf).toString("base64")}`;
-  }
+    let artBase64 = "";
+    if (art && art.trim() !== "") {
+      try {
+        const buf = await fetch(art).then(r => r.arrayBuffer());
+        artBase64 = `data:image/jpeg;base64,${Buffer.from(buf).toString("base64")}`;
+      } catch {
+        artBase64 = "";
+      }
+    }
 
-  const truncate = (str, n) => str.length > n ? str.slice(0, n) + "…" : str;
+    const truncate = (str, n) => str.length > n ? str.slice(0, n) + "…" : str;
 
-  const svg = `
+    const svg = `
 <svg width="320" height="80" viewBox="0 0 320 80" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
     <clipPath id="art">
@@ -40,7 +45,11 @@ export default async function handler(req, res) {
   ${isNowPlaying ? `<circle cx="303" cy="14" r="5" fill="#e53935"><animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite"/></circle>` : ""}
 </svg>`.trim();
 
-  res.setHeader("Content-Type", "image/svg+xml");
-  res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=30");
-  res.send(svg);
+    res.setHeader("Content-Type", "image/svg+xml");
+    res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=30");
+    res.send(svg);
+
+  } catch {
+    res.status(500).send("Error fetching Last.fm data");
+  }
 }
